@@ -134,56 +134,81 @@ def pred_and_plot(model, filename, class_names):
   
 import datetime
 
-def create_tensorboard_callback(dir_name, experiment_name):
-  """
-  Creates a TensorBoard callback instand to store log files.
+# create a TensorBoard callback (functionized because we need one for each model)
+def tensorboard_callback(dir_name, experiment_name):
+  
+  logs_directory = dir_name+"/"+experiment_name+"/"+datetime.datetime.now().strftime("%d%m%Y-%H%M%S")
+  
+  TensorBoard_callback = tf.keras.callbacks.TensorBoard(log_dir=logs_directory)
+  print(f"Saving TensorBoard logfiles to: {logs_directory}")
+  
+  return TensorBoard_callback
 
-  Stores log files with the filepath:
-    "dir_name/experiment_name/current_datetime/"
-
-  Args:
-    dir_name: target directory to store TensorBoard log files
-    experiment_name: name of experiment directory (e.g. efficientnet_model_1)
+# Let's make a create_function to create a model from URL
+def create_model(model_url, num_classes=10):
   """
-  log_dir = dir_name + "/" + experiment_name + "/" + datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
-  tensorboard_callback = tf.keras.callbacks.TensorBoard(
-      log_dir=log_dir
+    Takes a TensorFlow Hub URL and creates a Keras Sequential model with it.
+
+    Args:
+      model_url (str): A TensorFlow Hub feature extraction URL.
+      num_classes (int): Number of output neurons in the output layer,
+        should be equal to number of target classes, default 10.
+    
+    Returns:
+      An uncompiled Keras Sequential model with model_url as feature extractor
+      layer and Dense output layer with num_classes output neurons.
+  """
+  # Download the pre-trained model save it as Keras Layer
+  feature_extractor_layer = hub.KerasLayer(handle=model_url,
+                                           trainable = False,
+                                           name="feature_extractor_layer",
+                                           input_shape = IMAGE_SHAPE+(3,))
+  
+  #set seed
+  tf.random.set_seed(42)
+  
+  # Build the model
+  model = tf.keras.Sequential(
+      [
+          feature_extractor_layer,
+          tf.keras.layers.Dense(num_classes, activation="softmax", name="output_layer")
+      ]
   )
-  print(f"Saving TensorBoard log files to: {log_dir}")
-  return tensorboard_callback
+
+  # Compile the model
+  model.compile(loss = "categorical_crossentropy",
+                             optimizer = "Adam",
+                             metrics=["accuracy"])
+  return model
+
 
 # Plot the validation and training data separately
 import matplotlib.pyplot as plt
 
-def plot_loss_curves(history):
-  """
-  Returns separate loss curves for training and validation metrics.
+# Plot the validation and training curves separately
+def plot_loss_curve(meta):
 
-  Args:
-    history: TensorFlow model History object (see: https://www.tensorflow.org/api_docs/python/tf/keras/callbacks/History)
-  """ 
-  loss = history.history['loss']
-  val_loss = history.history['val_loss']
+  fig, (ax1,ax2) = plt.subplots(1,2, figsize=(16,6))
 
-  accuracy = history.history['accuracy']
-  val_accuracy = history.history['val_accuracy']
+  loss = meta.history["loss"]
+  accuracy = meta.history["accuracy"]
 
-  epochs = range(len(history.history['loss']))
+  val_loss = meta.history["val_loss"]
+  val_accuracy = meta.history["val_accuracy"]
 
-  # Plot loss
-  plt.plot(epochs, loss, label='training_loss')
-  plt.plot(epochs, val_loss, label='val_loss')
-  plt.title('Loss')
-  plt.xlabel('Epochs')
-  plt.legend()
+  epochs = range(len(meta.history["loss"]))
 
-  # Plot accuracy
-  plt.figure()
-  plt.plot(epochs, accuracy, label='training_accuracy')
-  plt.plot(epochs, val_accuracy, label='val_accuracy')
-  plt.title('Accuracy')
-  plt.xlabel('Epochs')
-  plt.legend();
+  sns.lineplot(data=meta.history, y=loss, x=epochs, label="loss", ax=ax1)
+  sns.lineplot(data=meta.history, y=val_loss, x=epochs, label="val_loss", ax=ax1).set(title="Loss Curve", xlabel="epochs")
+  ax1.grid(False)
+  ax1.legend(loc="upper right");
+ 
+
+  sns.lineplot(x=epochs, y=accuracy, label="accuracy", ax=ax2)
+  sns.lineplot(x=epochs, y=val_accuracy, label="val_accuracy", ax=ax2).set(title="Accuracy Curve", xlabel="epochs")
+  ax2.grid(False)
+  ax2.legend(loc="lower right");
+
 
 def compare_historys(original_history, new_history, initial_epochs=5):
     """
