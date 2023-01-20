@@ -185,6 +185,9 @@ def create_model(model_url, num_classes=10):
 # Plot the validation and training data separately
 import matplotlib.pyplot as plt
 
+
+import seaborn as sns
+
 # Plot the validation and training curves separately
 def plot_loss_curve(meta):
 
