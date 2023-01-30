@@ -8,6 +8,7 @@ import tensorflow as tf
 
 import os
 import pathlib
+import datetime
 import zipfile
 import random
 
@@ -16,3 +17,13 @@ def unzip_data(filename):
   zip_ref = zipfile.ZipFile(filename)
   zip_ref.extractall()
   zip_ref.close()
+
+# create a TensorBoard callback (functionized because we need one for each model)
+def tensorboard_callback(dir_name, experiment_name):
+  
+  logs_directory = dir_name+"/"+experiment_name+"/"+datetime.datetime.now().strftime("%d%m%Y-%H%M%S")
+  
+  TensorBoard_callback = tf.keras.callbacks.TensorBoard(log_dir=logs_directory)
+  print(f"Saving TensorBoard logfiles to: {logs_directory}")
+  
+  return TensorBoard_callback
