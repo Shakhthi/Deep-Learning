@@ -28,3 +28,24 @@ def tensorboard_callback(dir_name, experiment_name):
   
   return TensorBoard_callback
  
+  
+from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
+
+def model_evaluation(y_true, y_pred):
+  """
+  Returns a DataFrame of scores
+  Args:
+        y_true: actual test labels
+        y_pred: predictions of the model
+  """
+  accuracy = accuracy_score(y_true, y_pred)
+
+  precision = precision_score(y_true, y_pred)
+
+  recall = recall_score(y_true, y_pred)
+
+  f1 = f1_score(y_true, y_pred)
+
+  eval_df = pd.DataFrame(data=[accuracy, precision, recall, f1], 
+                         index=["accuracy score", "precision score", "recall score", "f1-score"])
+  return eval_df
