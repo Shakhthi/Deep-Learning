@@ -28,24 +28,27 @@ def tensorboard_callback(dir_name, experiment_name):
   
   return TensorBoard_callback
  
-  
-from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
+    
+# Function to evaluate: accuracy, precision, recall, f1-score
+from sklearn.metrics import accuracy_score, precision_recall_fscore_support
 
 def model_evaluation(y_true, y_pred):
   """
-  Returns a DataFrame of scores
+  Calculates model accuracy, precision, recall and f1 score of a binary classification model.
+
   Args:
-        y_true: actual test labels
-        y_pred: predictions of the model
+      y_true: true labels in the form of a 1D array
+      y_pred: predicted labels in the form of a 1D array
+
+  Returns a dictionary of accuracy, precision, recall, f1-score.
   """
-  accuracy = accuracy_score(y_true, y_pred)
+  # Calculate model accuracy
+  model_accuracy = accuracy_score(y_true, y_pred) * 100
+  # Calculate model precision, recall and f1 score using "weighted average
+  model_precision, model_recall, model_f1, _ = precision_recall_fscore_support(y_true, y_pred, average="weighted")
+  model_results = {"accuracy": model_accuracy,
+                  "precision": model_precision,
+                  "recall": model_recall,
+                  "f1": model_f1}
+  return model_results
 
-  precision = precision_score(y_true, y_pred)
-
-  recall = recall_score(y_true, y_pred)
-
-  f1 = f1_score(y_true, y_pred)
-
-  eval_df = pd.DataFrame(data=[accuracy, precision, recall, f1], 
-                         index=["accuracy score", "precision score", "recall score", "f1-score"])
-  return eval_df
